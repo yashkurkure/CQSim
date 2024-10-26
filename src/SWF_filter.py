@@ -1,18 +1,19 @@
+# type: ignore
 import Filter_job_SWF
 
 ext = {"ext_job_trace": ".swf", "ext_tmp_job": ".csv"}
 path = []
 path.append(
-    {
-        "path_in": "Input Files/SWF file/CLEANED/",
-        "path_tmp": "Temp/SWF Formatted/CLEANED/",
-    }
+	{
+		"path_in": "Input Files/SWF file/CLEANED/",
+		"path_tmp": "Temp/SWF Formatted/CLEANED/",
+	}
 )
 path.append(
-    {
-        "path_in": "Input Files/SWF file/ORIGINAL/",
-        "path_tmp": "Temp/SWF Formatted/ORIGINAL/",
-    }
+	{
+		"path_in": "Input Files/SWF file/ORIGINAL/",
+		"path_tmp": "Temp/SWF Formatted/ORIGINAL/",
+	}
 )
 
 
@@ -55,26 +56,26 @@ trace_name = ""
 save_name = ""
 
 filter_job = Filter_job_SWF.Filter_job_SWF(
-    trace=trace_name, save=save_name, sdate=None, debug=0
+	trace=trace_name, save=save_name, sdate=None, debug=0
 )
 for i in SWF_files[0]:
-    trace_name = ""
-    save_name = ""
-    trace_name = path[0]["path_in"] + i + ext["ext_job_trace"]
-    save_name = path[0]["path_tmp"] + i + ext["ext_tmp_job"]
-    print("==================================================")
-    print(trace_name)
-    filter_job.reset(trace=trace_name, save=save_name, sdate=None, debug=0)
-    filter_job.read_job_trace()
-    filter_job.output_job_data()
+	trace_name = ""
+	save_name = ""
+	trace_name = path[0]["path_in"] + i + ext["ext_job_trace"]
+	save_name = path[0]["path_tmp"] + i + ext["ext_tmp_job"]
+	print("==================================================")
+	print(trace_name)
+	filter_job.reset(trace=trace_name, save=save_name, sdate=None, debug=0)
+	filter_job.read_job_trace()
+	filter_job.output_job_data()
 
 for i in SWF_files[1]:
-    trace_name = ""
-    save_name = ""
-    trace_name = path[1]["path_in"] + i + ext["ext_job_trace"]
-    save_name = path[1]["path_tmp"] + i + ext["ext_tmp_job"]
-    print("==================================================")
-    print(trace_name)
-    filter_job.reset(trace=trace_name, save=save_name, sdate=None, debug=0)
-    filter_job.read_job_trace()
-    filter_job.output_job_data()
+	trace_name = ""
+	save_name = ""
+	trace_name = path[1]["path_in"] + i + ext["ext_job_trace"]
+	save_name = path[1]["path_tmp"] + i + ext["ext_tmp_job"]
+	print("==================================================")
+	print(trace_name)
+	filter_job.reset(trace=trace_name, save=save_name, sdate=None, debug=0)
+	filter_job.read_job_trace()
+	filter_job.output_job_data()

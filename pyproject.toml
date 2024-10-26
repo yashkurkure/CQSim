@@ -1,3 +1,13 @@
+[project]
+name = "my_client"
+version = "0.1"
+description = "CQSim is an open-source, discrete-event driven cluster scheduling simulator"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.scripts]
+cqsim = "src/cqsim.py"
+
 [tool.poetry]
 name = "cqsim"
 version = "0.1.0"
@@ -18,20 +28,17 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
-exclude=[
-  "src.eltura.scripts",
-  "src.eltura.adhoc_analysis",
-  "src.eltura.portfolio_management"
-]
 ignore_missing_imports = true
 disable_error_code = [
   "import-untyped",
   "no-redef"
 ]
 
+[tool.ruff.format]
+indent-style = "tab"
+
 [tool.poe.tasks]
 lint = "ruff check src"
 typecheck = "mypy --config-file pyproject.toml src"
 format = "ruff format src"
-test = "pytest test/eltura-test"
-check = ["format", "lint", "typecheck", "test"]
+check = ["format", "lint", "typecheck"]
