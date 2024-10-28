@@ -1,3 +1,4 @@
+from Extend.job_manager.job import Job
 import re
 
 __metaclass__ = type
@@ -123,12 +124,10 @@ class Node_struc:
 		self.idle = self.tot
 		self.avail = self.tot
 
-	def is_available(self, proc_num):
-		# self.debug.debug("* "+self.myInfo+" -- is_available",6)
-		result = 0
-		if self.avail >= proc_num:
-			result = 1
+	def is_available(self, proc_num:int) -> bool:
+		result = self.avail >= proc_num
 		self.debug.debug("[Avail Check] " + str(result), 6)
+
 		return result
 
 	def get_tot(self):
@@ -143,33 +142,34 @@ class Node_struc:
 		# self.debug.debug("* "+self.myInfo+" -- get_avail",6)
 		return self.avail
 
-	def node_allocate(self, proc_num, job_index, start, end):
-		# self.debug.debug("* "+self.myInfo+" -- node_allocate",5)
-		if self.is_available(proc_num) == 0:
+	def node_allocate(self, proc_num, job: Job, start, end):
+		if not self.is_available(proc_num):
 			return 0
 		i = 0
+
 		for node in self.nodeStruc:
 			if node["state"] < 0:
-				node["state"] = job_index
+				node["state"] = job.index
 				node["start"] = start
 				node["end"] = end
 				i += 1
-			# self.debug.debug("  yyy: "+str(node['state'])+"   "+str(job_index),4)
 			if i >= proc_num:
 				break
+
 		self.idle -= proc_num
 		self.avail = self.idle
-		temp_job_info = {"job": job_index, "end": end, "node": proc_num}
+		temp_job_info = {"job": job.index, "end": end, "node": proc_num}
+
 		j = 0
-		is_done = 0
+		is_done = False
 		temp_num = len(self.job_list)
 		while j < temp_num:
 			if temp_job_info["end"] < self.job_list[j]["end"]:
 				self.job_list.insert(j, temp_job_info)
-				is_done = 1
+				is_done = True
 			j += 1
 
-		if is_done == 0:
+		if not is_done:
 			self.job_list.append(temp_job_info)
 
 		self.debug.debug(
@@ -186,12 +186,10 @@ class Node_struc:
 		)
 		return 1
 
-	def node_release(self, job_index, end):
-		# self.debug.debug("* "+self.myInfo+" -- node_release",5)
+	def node_release(self, job: Job, end):
 		i = 0
 		for node in self.nodeStruc:
-			# self.debug.debug("  xxx: "+str(node['state'])+"   "+str(job_index),4)
-			if node["state"] == job_index:
+			if node["state"] == job.index:
 				node["state"] = -1
 				node["start"] = -1
 				node["end"] = -1
@@ -199,12 +197,13 @@ class Node_struc:
 		if i <= 0:
 			self.debug.debug("  Release Fail!", 4)
 			return 0
+
 		self.idle += i
 		self.avail = self.idle
 		j = 0
 		temp_num = len(self.job_list)
 		while j < temp_num:
-			if job_index == self.job_list[j]["job"]:
+			if job.index == self.job_list[j]["job"]:
 				break
 			j += 1
 		self.job_list.pop(j)

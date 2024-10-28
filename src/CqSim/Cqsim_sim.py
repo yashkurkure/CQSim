@@ -1,6 +1,7 @@
 from enum import Enum
 from Extend.job_manager.FCFSWithBackfilling import FCFS
 from Extend.job_manager.cluster_state import ClusterState
+from bisect import bisect_left
 
 __metaclass__ = type
 
@@ -23,11 +24,6 @@ class Cqsim_sim:
 		self.debug = debug
 		self.monitor = monitor
 
-		self.debug.line(4, " ")
-		self.debug.line(4, "#")
-		self.debug.debug("# " + self.myInfo, 1)
-		self.debug.line(4, "#")
-
 		self.event_seq = []
 		self.monitor_start = 0
 		self.current_event = None
@@ -37,11 +33,8 @@ class Cqsim_sim:
 		self.scheduler = FCFS()
 		self.job_manager = job_manager
 
-		self.debug.line(4)
 		for module_name in self.module:
 			temp_name = self.module[module_name].myInfo
-			self.debug.debug(temp_name + " ................... Load", 4)
-			self.debug.line(4)
 
 	def reset(self, module=None, debug=None, monitor=None):
 		if module:
@@ -73,19 +66,15 @@ class Cqsim_sim:
 		temp_return = (
 			self.job_manager.dyn_import_job_file()
 		)
-		i = self.read_job_pointer
-		for job in self.job_manager.all_jobs:
+		i = 0
+		for job in self.job_manager.all_jobs[self.read_job_pointer:]:
 			self.insert_event(1, job.submit_time, 2, [1, job.index])
 			self.previous_read_job_time = job.submit_time
-			self.debug.debug(
-				"  " + "Insert job[" + "2" + "] " + str(job.submit_time),
-				4,
-			)
 			i += 1
 		if temp_return is None or temp_return < 0:
 			self.read_job_pointer = -1
 		else:
-			self.read_job_pointer = i
+			self.read_job_pointer += i
 
 	def insert_event_monitor(self, start, end):
 		if not self.monitor:
@@ -99,7 +88,6 @@ class Cqsim_sim:
 		while temp_time < end:
 			if temp_time >= start:
 				self.insert_event(2, temp_time, 5, None)
-				self.debug.debug("  " + "Insert mon[" + "5" + "] " + str(temp_time), 4)
 			temp_time += self.monitor
 		return
 
@@ -132,9 +120,6 @@ class Cqsim_sim:
 		return self.monitor_start
 
 	def scan_event(self):
-		self.debug.line(2, " ")
-		self.debug.line(2, "=")
-		self.debug.line(2, "=")
 		self.current_event = None
 
 		while len(self.event_seq) > 0 or self.read_job_pointer >= 0:
@@ -155,28 +140,6 @@ class Cqsim_sim:
 			self.current_event = temp_current_event
 			self.currentTime = temp_currentTime
 			if self.current_event["type"] == 1:
-				print(f'JOB EVENT: {self.current_event["para"]}')
-				self.debug.line(2, " ")
-				self.debug.line(2, ">>>")
-				self.debug.line(2, "--")
-				self.debug.debug("  Time: " + str(self.currentTime), 2)
-				self.debug.debug("   " + str(self.current_event), 2)
-				self.debug.line(2, "--")
-				self.debug.debug("  Submit : " + str([j.index for j in self.job_manager.job_submit_list]), 2)
-				self.debug.debug("  Wait: " + str(self.job_manager.wait_list()), 2)
-				self.debug.debug("  Run : " + str([j.index for j in self.job_manager.run_list()]), 2)
-				self.debug.line(2, "--")
-				self.debug.debug(
-					"  Tot:"
-					+ str(self.module["node"].get_tot())
-					+ " Idle:"
-					+ str(self.module["node"].get_idle())
-					+ " Avail:"
-					+ str(self.module["node"].get_avail())
-					+ " ",
-					2,
-				)
-				self.debug.line(2, "--")
 				self.event_job(self.current_event["para"])
 
 			elif self.current_event["type"] == 2:
@@ -187,9 +150,6 @@ class Cqsim_sim:
 			self.interface()
 			# self.event_pointer += 1
 			del self.event_seq[0]
-		self.debug.line(2, "=")
-		self.debug.line(2, "=")
-		self.debug.line(2, " ")
 		return
 
 	def get_cluster_state(self):
@@ -210,41 +170,31 @@ class Cqsim_sim:
 		return
 
 	def event_monitor(self, para_in=None):
-		# self.debug.debug("# "+self.myInfo+" -- event_monitor",5)
 		self.print_adapt(None)
 		return
 
 	def event_extend(self, para_in=None):
-		# self.debug.debug("# "+self.myInfo+" -- event_extend",5)
 		return
 
 	def submit(self, job_index):
 		job = self.job_manager.job_info(job_index)
-		try:
-			self.job_manager.job_submit(job)
-			print(f'Submitting job {job.index}')
-		except:
-			print(f'Failed to submit {job.index}')
+		self.job_manager.job_submit(job)
 
 	def finish(self, job_index):
 		job = self.job_manager.job_info(job_index)
 
 		self.module["node"].node_release(job, self.currentTime)
-		self.job_manager.job_finish(job_index)
-		self.job_manager.remove_job_from_dict(job_index)
+		self.job_manager.job_finish(job, self.currentTime)
+		self.job_manager.remove_job_from_dict(job)
 
 	def start(self, job):
 		self.module["node"].node_allocate(
 			job.requested_processors,
-			job.index,
+			job,
 			self.currentTime,
 			self.currentTime + job.requested_time,
 		)
-		try:
-			self.job_manager.job_start(job, self.currentTime)
-			print(f'Started job {job.index}')
-		except:
-			print(f'Failed to start {job.index}')
+		self.job_manager.job_start(job, self.currentTime)
 		self.insert_event(
 			1,
 			self.currentTime + job.run_time,

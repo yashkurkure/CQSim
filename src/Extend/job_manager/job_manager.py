@@ -171,9 +171,9 @@ class JobManager:
 		self.job_wait_size -= job.requested_processors
 
 	def job_finish(self, job:Job, time=None):
-		job.mark_finished()
+		job.mark_finished(time)
 		self.job_run_list.remove(job)
 
-	def remove_job_from_dict(self, job_index):
-		del self.job_trace[job_index]
+	def remove_job_from_dict(self, job: Job):
+		del self.job_trace[job.index]
 		self.num_delete_jobs += 1
