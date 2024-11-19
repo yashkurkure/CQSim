@@ -6,7 +6,7 @@ __metaclass__ = type
 class Node_struc_SWF(Class_Node_struc.Node_struc):
 	def node_allocate(self, proc_num, job, start, end):
 		if not self.is_available(proc_num):
-			return 0
+			raise Exception(f'Cannot allocate for job {job.index}')
 
 		self.idle -= proc_num
 		self.avail = self.idle

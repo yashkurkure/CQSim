@@ -7,3 +7,4 @@ class ClusterState:
 	available_processors: int
 	total_processors: int
 	job_wait_list: list[Job]
+	time: int

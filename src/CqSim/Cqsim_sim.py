@@ -18,7 +18,14 @@ class JobEvents(Enum):
 
 
 class Cqsim_sim:
-	def __init__(self, module, scheduler, job_manager, debug=None, monitor=None):
+	def __init__(
+		self,
+		module,
+		scheduler,
+		job_manager,
+		debug=None,
+		monitor=None
+	):
 		self.myInfo = "Cqsim Sim"
 		self.module = module
 		self.debug = debug
@@ -51,6 +58,10 @@ class Cqsim_sim:
 		self.currentTime = 0
 		self.read_job_pointer = 0
 		self.previous_read_job_time = -1
+		self.job_manager.reset()
+
+		for key, val in self.module.items():
+			val.reset()
 
 	def cqsim_sim(self):
 		self.import_submit_events()
@@ -119,52 +130,61 @@ class Cqsim_sim:
 		self.monitor_start += 1
 		return self.monitor_start
 
+	def step(self):
+		if len(self.event_seq) > 0:
+			temp_current_event = self.event_seq[0]
+			temp_currentTime = temp_current_event["time"]
+		else:
+			temp_current_event = None
+			temp_currentTime = -1
+
+		if (
+			len(self.event_seq) == 0
+			or temp_currentTime >= self.previous_read_job_time
+		) and self.read_job_pointer >= 0:
+			self.import_submit_events()
+			return self.step()
+
+		self.current_event = temp_current_event
+		self.currentTime = temp_currentTime
+
+		if self.current_event is None:
+			return None
+
+		if self.current_event["type"] == 1:
+			self.event_job(self.current_event["para"])
+		elif self.current_event["type"] == 2:
+			self.event_monitor(self.current_event["para"])
+		elif self.current_event["type"] == 3:
+			self.event_extend(self.current_event["para"])
+
+		#self.sys_collect()
+		self.interface()
+		del self.event_seq[0]
+
+		return self.current_event
+
 	def scan_event(self):
 		self.current_event = None
 
 		while len(self.event_seq) > 0 or self.read_job_pointer >= 0:
-			if len(self.event_seq) > 0:
-				temp_current_event = self.event_seq[0]
-				temp_currentTime = temp_current_event["time"]
-			else:
-				temp_current_event = None
-				temp_currentTime = -1
+			self.step()
 
-			if (
-				len(self.event_seq) == 0
-				or temp_currentTime >= self.previous_read_job_time
-			) and self.read_job_pointer >= 0:
-				self.import_submit_events()
-				continue
-
-			self.current_event = temp_current_event
-			self.currentTime = temp_currentTime
-			if self.current_event["type"] == 1:
-				self.event_job(self.current_event["para"])
-
-			elif self.current_event["type"] == 2:
-				self.event_monitor(self.current_event["para"])
-			elif self.current_event["type"] == 3:
-				self.event_extend(self.current_event["para"])
-			self.sys_collect()
-			self.interface()
-			# self.event_pointer += 1
-			del self.event_seq[0]
 		return
 
 	def get_cluster_state(self):
 		n_avail = self.module["node"].get_avail()
-		n_total = self.module["node"].get_total()
+		n_total = self.module["node"].get_tot()
 		job_wait_list = self.job_manager.wait_list()
+		time = self.previous_read_job_time
 
-		return ClusterState(n_avail, n_total, job_wait_list)
+		return ClusterState(n_avail, n_total, job_wait_list, time=self.currentTime)
 
 	def event_job(self, para_in=None):
 		if self.current_event["para"][0] == 1:
 			self.submit(self.current_event["para"][1])
 		elif self.current_event["para"][0] == 2:
 			self.finish(self.current_event["para"][1])
-		self.schedule_jobs()
 		if len(self.event_seq) > 1:
 			self.insert_event_monitor(self.currentTime, self.event_seq[1]["time"])
 		return
@@ -178,7 +198,8 @@ class Cqsim_sim:
 
 	def submit(self, job_index):
 		job = self.job_manager.job_info(job_index)
-		self.job_manager.job_submit(job)
+		# TODO this probably isn't right
+		self.job_manager.job_submit(job, self.previous_read_job_time)
 
 	def finish(self, job_index):
 		job = self.job_manager.job_info(job_index)
@@ -202,13 +223,19 @@ class Cqsim_sim:
 			[2, job.index],
 		)
 
-	def schedule_jobs(self):
+	def schedule_jobs(self, jobs=None):
+		if jobs is not None:
+			for job in jobs:
+				self.start(job)
+
+			return
+
 		state = ClusterState(
 			available_processors=self.module["node"].get_avail(),
 			total_processors=self.module["node"].get_tot(),
 			job_wait_list=self.job_manager.wait_list(),
 		)
-		jobs_to_start = self.scheduler.schedule(state)
+		jobs = self.scheduler.schedule(state)
 
 		for job in jobs_to_start:
 			self.start(job)

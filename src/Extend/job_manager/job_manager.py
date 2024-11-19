@@ -113,6 +113,8 @@ class JobManager:
 
 				# self.job_trace[self.i] = job
 				self.job_trace[job.index] = job
+				if job.index == 11:
+					print(f'Here is 11!')
 				self.job_submit_list.append(job)
 				self.all_jobs.append(job)
 
@@ -158,7 +160,12 @@ class JobManager:
 
 	def job_submit(self, job:Job, job_est_start=-1):
 		job.mark_submitted(job_est_start)
-		self.job_submit_list.remove(job)
+		try:
+			self.job_submit_list.remove(job)
+		except:
+			print(f'Failed to remove job with index {job.index}')
+			print(f'list: {[j.index for j in self.job_submit_list]}')
+			raise
 		self.job_wait_list.append(job)
 
 		self.job_wait_size += job.requested_processors

@@ -23,14 +23,8 @@ class Filter_job:
 		self.trace = str(trace)
 		self.save = str(save)
 		self.config = str(config)
-		self.debug = debug
 		self.jobNum = -1
 		self.jobList = []
-
-		self.debug.line(4, " ")
-		self.debug.line(4, "#")
-		self.debug.debug("# " + self.myInfo, 1)
-		self.debug.line(4, "#")
 
 		self.reset_config_data()
 
@@ -46,7 +40,6 @@ class Filter_job:
 		rnum=None,
 		debug=None,
 	):
-		self.debug.debug("* " + self.myInfo + " -- reset", 5)
 		if start:
 			self.start = start
 		if sdate:
@@ -63,15 +56,12 @@ class Filter_job:
 			self.save = str(save)
 		if config:
 			self.config = str(config)
-		if debug:
-			self.debug = debug
 		self.jobNum = -1
 		self.jobList = []
 
 		self.reset_config_data()
 
 	def reset_config_data(self):
-		self.debug.debug("* " + self.myInfo + " -- reset_config_data", 5)
 		self.config_start = ";"
 		self.config_sep = "\\n"
 		self.config_equal = ": "
@@ -79,30 +69,24 @@ class Filter_job:
 		# self.config_data.append({'name_config':'date','name':'StartTime','value':''})
 
 	def read_job_trace(self):
-		self.debug.debug("* " + self.myInfo + " -- read_job_trace", 5)
 		return
 
 	def input_check(self, jobInfo):
-		self.debug.debug("* " + self.myInfo + " -- input_check", 5)
 		return
 
 	def get_job_num(self):
-		self.debug.debug("* " + self.myInfo + " -- get_job_num", 6)
 		return self.jobNum
 
 	def get_job_data(self):
-		self.debug.debug("* " + self.myInfo + " -- get_job_data", 5)
 		return self.jobList
 
 	def output_job_data(self):
-		self.debug.debug("* " + self.myInfo + " -- output_job_data", 5)
 		if not self.save:
 			print("Save file not set!")
 			return
 		return
 
 	def output_job_config(self):
-		self.debug.debug("* " + self.myInfo + " -- output_job_config", 5)
 		if not self.config:
 			print("Config file not set!")
 			return
