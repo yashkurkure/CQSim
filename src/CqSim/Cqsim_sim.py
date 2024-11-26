@@ -1,6 +1,8 @@
 from enum import Enum
 from Extend.job_manager.FCFSWithBackfilling import FCFS
 from Extend.job_manager.cluster_state import ClusterState
+from Extend.job_manager.job_manager import JobManager
+from Extend.job_manager.job_allocator import JobAllocator
 from bisect import bisect_left
 
 __metaclass__ = type
@@ -23,6 +25,7 @@ class Cqsim_sim:
 		module,
 		scheduler,
 		job_manager,
+		job_allocator,
 		debug=None,
 		monitor=None
 	):
@@ -38,7 +41,8 @@ class Cqsim_sim:
 		self.read_job_pointer = 0  # next position in job list
 		self.previous_read_job_time = -1  # lastest read job submit time
 		self.scheduler = FCFS()
-		self.job_manager = job_manager
+		self.job_manager: JobManager = job_manager
+		self.job_allocator: JobAllocator = job_allocator
 
 		for module_name in self.module:
 			temp_name = self.module[module_name].myInfo
@@ -75,7 +79,8 @@ class Cqsim_sim:
 		if self.read_job_pointer < 0:
 			return None
 		temp_return = (
-			self.job_manager.dyn_import_job_file()
+			# self.job_manager.dyn_import_job_file()
+			self.job_manager.import_next_job()
 		)
 		i = 0
 		for job in self.job_manager.all_jobs[self.read_job_pointer:]:
@@ -173,8 +178,8 @@ class Cqsim_sim:
 		return
 
 	def get_cluster_state(self):
-		n_avail = self.module["node"].get_avail()
-		n_total = self.module["node"].get_tot()
+		n_avail = self.job_allocator.get_avail()
+		n_total = self.job_allocator.get_tot()
 		job_wait_list = self.job_manager.wait_list()
 		time = self.previous_read_job_time
 
@@ -204,12 +209,12 @@ class Cqsim_sim:
 	def finish(self, job_index):
 		job = self.job_manager.job_info(job_index)
 
-		self.module["node"].node_release(job, self.currentTime)
+		self.job_allocator.node_release(job, self.currentTime)
 		self.job_manager.job_finish(job, self.currentTime)
 		self.job_manager.remove_job_from_dict(job)
 
 	def start(self, job):
-		self.module["node"].node_allocate(
+		self.job_allocator.node_allocate(
 			job.requested_processors,
 			job,
 			self.currentTime,
@@ -231,8 +236,8 @@ class Cqsim_sim:
 			return
 
 		state = ClusterState(
-			available_processors=self.module["node"].get_avail(),
-			total_processors=self.module["node"].get_tot(),
+			available_processors=self.job_allocator.get_avail(),
+			total_processors=self.job_allocator.get_tot(),
 			job_wait_list=self.job_manager.wait_list(),
 		)
 		jobs = self.scheduler.schedule(state)
@@ -256,9 +261,9 @@ class Cqsim_sim:
 		temp_info = self.module["info"].info_collect(
 			time=self.currentTime,
 			event=event_code,
-			uti=(self.module["node"].get_tot() - self.module["node"].get_idle())
+			uti=(self.job_allocator.get_tot() - self.job_allocator.get_idle())
 			* 1.0
-			/ self.module["node"].get_tot(),
+			/ self.job_allocator.get_tot(),
 			waitNum=len(self.job_manager.wait_list()),
 			waitSize=self.job_manager.wait_size(),
 			inter=temp_inter,

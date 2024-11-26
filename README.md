@@ -12,5 +12,5 @@ Note: if you use CQSim in your work, please cite the following papers:
 
 # Getting started: Run A Simple Example
 ```
-python cqsim.py -j test.swf -n test.swf
+python cqsim.py -j test.swf -n node_config.json
 ```

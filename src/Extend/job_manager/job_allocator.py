@@ -1,11 +1,27 @@
-from Extend.job_manager.job import Job
+from dataclasses import dataclass
 import re
 import json
 
 __metaclass__ = type
 
+@dataclass
+class Node:
+	id: int
+	location: list
+	group: int
+	state: int
+	proc: int
+	start: int = -1
+	end: int = -1
+	extend: list = None
 
-class Node_struc:
+@dataclass
+class NodeConfigFile:
+	num_nodes: int
+	procs_per_node: int
+
+
+class JobAllocator:
 	def __init__(self):
 		self.myInfo = "Node Structure"
 		self.nodeStruc = []
@@ -32,78 +48,9 @@ class Node_struc:
 			item = int(item)
 		return result_list
 
-	def import_node_file(self, node_file):
-		# TODO: This needs to be obsolete
-		regex_str = "([^;\\n]*)[;\\n]"
-		nodeFile = open(node_file, "r")
-		self.nodeStruc = []
-
-		i = 0
-		while 1:
-			tempStr = nodeFile.readline()
-			if not tempStr:  # break when no more line
-				break
-			temp_dataList = re.findall(regex_str, tempStr)
-
-			tempInfo = {
-				"id": int(temp_dataList[0]),
-				"location": self.read_list(temp_dataList[1]),
-				"group": int(temp_dataList[2]),
-				"state": int(temp_dataList[3]),
-				"proc": int(temp_dataList[4]),
-				"start": -1,
-				"end": -1,
-				"extend": None,
-			}
-			self.nodeStruc.append(tempInfo)
-			i += 1
-		nodeFile.close()
-		self.tot = len(self.nodeStruc)
-		self.idle = self.tot
-		self.avail = self.tot
-		return
-
-	def import_node_config(self, config_file):
-		# TODO: This needs to be obsolete
-		regex_str = "([^=\\n]*)[=\\n]"
-		nodeFile = open(config_file, "r")
-		config_data = {}
-
-		while 1:
-			tempStr = nodeFile.readline()
-			if not tempStr:  # break when no more line
-				break
-			temp_dataList = re.findall(regex_str, tempStr)
-			config_data[temp_dataList[0]] = temp_dataList[1]
-		nodeFile.close()
-
-	def import_node_data(self, node_data):
-		self.nodeStruc = []
-
-		temp_len = len(node_data)
-		i = 0
-		while i < temp_len:
-			temp_dataList = node_data[i]
-
-			tempInfo = {
-				"id": temp_dataList[0],
-				"location": temp_dataList[1],
-				"group": temp_dataList[2],
-				"state": temp_dataList[3],
-				"proc": temp_dataList[4],
-				"start": -1,
-				"end": -1,
-				"extend": None,
-			}
-			self.nodeStruc.append(tempInfo)
-			i += 1
-		self.tot = len(self.nodeStruc)
-		self.idle = self.tot
-		self.avail = self.tot
 
 	def is_available(self, proc_num:int) -> bool:
 		result = self.avail >= proc_num
-
 		return result
 
 	def get_tot(self):
@@ -279,8 +226,22 @@ class Node_struc:
 			i += 1
 		return -1
 	
-	def read_config(file_path):
-		# TODO: Replace the calls to the following functions
-		# import_node_file(save_name_n)
-		# import_node_config(config_name_n)
-		pass
+	def read_config(self, file_path):
+		with open(file_path, 'r') as f:
+			data = json.load(f)
+		config = NodeConfigFile(**data)
+
+		for i in range(0, config.num_nodes):
+			n = Node(
+				id = i,
+				location = [],
+				group = -1,
+				state = -1,
+				proc = config.procs_per_node
+			)
+			self.nodeStruc.append(n)
+		
+		self.tot = len(self.nodeStruc)
+		self.idle = self.tot
+		self.avail = self.tot
+		return

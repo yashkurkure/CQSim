@@ -1,0 +1,4 @@
+{
+    "num_nodes" : 100,
+    "procs_per_node" : 1
+}

@@ -19,7 +19,8 @@ class JobManager:
 		self.read_input_freq = read_input_freq
 		self.num_delete_jobs = 0
 		self.index_to_job = {}
-		self.all_jobs = []
+		self.all_jobs: list[Job] = []
+		self.curr_job_index: int = 0 # index into all_jobs for the next job to be imported
 
 		self.reset_data()
 
@@ -185,17 +186,68 @@ class JobManager:
 		del self.job_trace[job.index]
 		self.num_delete_jobs += 1
 
-	def import_next_job():
-		# Returns -1 when no jobs left to read, else 0
-		# TODO: Implement and replace calls to dyn_import_job_file()
-		pass
+	def import_next_job(self):
+		# NOTE: For now this replaces the calls to dyn_import_job_file within Cqsim_sim
+		# Once it is removed from Cqsim_sim, this function can be deleted
+		if self.curr_job_index < len(self.all_jobs):
+			job = self.all_jobs[self.curr_job_index]
+			self.curr_job_index +=1
+			return 0
+		else:
+			return -1
+
+	def read_swf(self, file_path):
+		with open(file_path, 'r') as file:
+
+
+			first_submit_time = -1
+			virtual_offset = 0
+			for line in file:
+				
+				# TODO: For now ignoring the header of the swf file
+				if line[0] == ';':
+					continue
+				job_data = [int(x) for x in line.split() if x]
+
+				# This ensures the first job is submiteted at t = 0
+				if first_submit_time < 0:
+					first_submit_time = float(job_data[1])
+
+				submit = (
+					self.density * (float(job_data[1]) - first_submit_time) + virtual_offset
+				)
+
+				job = Job(
+					index=int(job_data[0]),
+					submit_time=submit,
+					wait_time=float(job_data[2]),
+					run_time=float(job_data[3]),
+					used_processors=int(job_data[4]),
+					used_processor_avg=float(job_data[5]),
+					used_memory=float(job_data[6]),
+					requested_processors=int(job_data[7]),
+					requested_time=float(job_data[8]),
+					requested_memory=float(job_data[9]),
+					status=JobStatus(int(job_data[10])),
+					user_id=int(job_data[11]),
+					group_id=int(job_data[12]),
+					num_exe=int(job_data[13]),
+					num_queue=int(job_data[14]),
+					num_part=int(job_data[15]),
+					num_pre=int(job_data[16]),
+					think_time=int(job_data[17]),
+					start_time=-1,
+					end_time=-1,
+				)
+				self.all_jobs.append(job)
+				self.job_submit_list.append(job)
+				self.job_trace[job.index] = job
 
 
 	def read_jobs(self, file_path, file_type):
-		# Populates all jobs
-		# TODO: Implement
 		if file_type == 'SWF':
-			pass
-		if file_type == 'CSV':
-			pass
-		pass
+			self.read_swf(file_path)
+		elif file_type == 'CSV':
+			raise NotImplementedError('Reading CSV job trace not implemented!')
+		else:
+			raise NotImplementedError(f'Reading {file_type} job trace not implemented!')
