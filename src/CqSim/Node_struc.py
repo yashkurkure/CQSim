@@ -32,6 +32,7 @@ class Node_struc:
 		return result_list
 
 	def import_node_file(self, node_file):
+		# TODO: This needs to be obsolete
 		regex_str = "([^;\\n]*)[;\\n]"
 		nodeFile = open(node_file, "r")
 		self.nodeStruc = []
@@ -62,6 +63,7 @@ class Node_struc:
 		return
 
 	def import_node_config(self, config_file):
+		# TODO: This needs to be obsolete
 		regex_str = "([^=\\n]*)[=\\n]"
 		nodeFile = open(config_file, "r")
 		config_data = {}
@@ -112,24 +114,13 @@ class Node_struc:
 	def get_avail(self):
 		return self.avail
 
-	def node_allocate(self, proc_num, job: Job, start, end):
+	def node_allocate(self, proc_num, job, start, end):
 		if not self.is_available(proc_num):
-			return 0
-		i = 0
-
-		for node in self.nodeStruc:
-			if node["state"] < 0:
-				node["state"] = job.index
-				node["start"] = start
-				node["end"] = end
-				i += 1
-			if i >= proc_num:
-				break
+			raise Exception(f'Cannot allocate for job {job.index}')
 
 		self.idle -= proc_num
 		self.avail = self.idle
 		temp_job_info = {"job": job.index, "end": end, "node": proc_num}
-
 		j = 0
 		is_done = False
 		temp_num = len(self.job_list)
@@ -137,6 +128,7 @@ class Node_struc:
 			if temp_job_info["end"] < self.job_list[j]["end"]:
 				self.job_list.insert(j, temp_job_info)
 				is_done = True
+				break
 			j += 1
 
 		if not is_done:
@@ -144,26 +136,19 @@ class Node_struc:
 
 		return 1
 
-	def node_release(self, job: Job, end):
-		i = 0
-		for node in self.nodeStruc:
-			if node["state"] == job.index:
-				node["state"] = -1
-				node["start"] = -1
-				node["end"] = -1
-				i += 1
-		if i <= 0:
-			return 0
-
-		self.idle += i
-		self.avail = self.idle
+	def node_release(self, job, end):
+		temp_node = 0
 		j = 0
 		temp_num = len(self.job_list)
 		while j < temp_num:
 			if job.index == self.job_list[j]["job"]:
+				temp_node = self.job_list[j]["node"]
 				break
 			j += 1
+		self.idle += temp_node
+		self.avail = self.idle
 		self.job_list.pop(j)
+
 		return 1
 
 	def pre_avail(self, proc_num, start, end=None):
@@ -213,56 +198,29 @@ class Node_struc:
 		start_index = j
 		while j < temp_max:
 			if self.predict_node[j]["time"] < end:
-				k = 0
-				n = 0
-				while k < self.tot and n < proc_num:
-					if self.predict_node[j]["node"][k] == -1:
-						self.predict_node[j]["node"][k] = job_index
-						self.predict_node[j]["idle"] -= 1
-						self.predict_node[j]["avail"] = self.predict_node[j]["idle"]
-						n += 1
-					k += 1
+				self.predict_node[j]["idle"] -= proc_num
+				self.predict_node[j]["avail"] = self.predict_node[j]["idle"]
 				j += 1
 			elif self.predict_node[j]["time"] == end:
 				is_done = 1
 				break
 			else:
-				temp_list = []
-				k = 0
-				while k < self.tot:
-					temp_list.append(self.predict_node[j - 1]["node"][k])
-					k += 1
 				self.predict_node.insert(
 					j,
 					{
 						"time": end,
-						"node": temp_list,
 						"idle": self.predict_node[j - 1]["idle"],
 						"avail": self.predict_node[j - 1]["avail"],
 					},
 				)
-				k = 0
-				n = 0
-				while k < self.tot and n < proc_num:
-					if self.predict_node[j]["node"][k] == job_index:
-						self.predict_node[j]["node"][k] = -1
-						self.predict_node[j]["idle"] += 1
-						self.predict_node[j]["avail"] = self.predict_node[j]["idle"]
-						n += 1
-					k += 1
+				self.predict_node[j]["idle"] += proc_num
+				self.predict_node[j]["avail"] = self.predict_node[j]["idle"]
 				is_done = 1
 
 				break
 
-		temp_list = []
 		if is_done != 1:
-			k = 0
-			while k < self.tot:
-				temp_list.append(-1)
-				k += 1
-			self.predict_node.append(
-				{"time": end, "node": temp_list, "idle": self.tot, "avail": self.tot}
-			)
+			self.predict_node.append({"time": end, "idle": self.tot, "avail": self.tot})
 
 		self.predict_job.append({"job": job_index, "start": start, "end": end})
 		return start_index
@@ -285,42 +243,24 @@ class Node_struc:
 	def pre_reset(self, time):
 		self.predict_node = []
 		self.predict_job = []
-		temp_list = []
-		i = 0
-		while i < self.tot:
-			temp_list.append(self.nodeStruc[i]["state"])
-			i += 1
-		self.predict_node.append(
-			{"time": time, "node": temp_list, "idle": self.idle, "avail": self.avail}
-		)
+		self.predict_node.append({"time": time, "idle": self.idle, "avail": self.avail})
 
 		temp_job_num = len(self.job_list)
 		i = 0
 		j = 0
 		while i < temp_job_num:
 			if self.predict_node[j]["time"] != self.job_list[i]["end"] or i == 0:
-				temp_list = []
-				k = 0
-				while k < self.tot:
-					temp_list.append(self.predict_node[j]["node"][k])
-					k += 1
 				self.predict_node.append(
 					{
 						"time": self.job_list[i]["end"],
-						"node": temp_list,
 						"idle": self.predict_node[j]["idle"],
 						"avail": self.predict_node[j]["avail"],
 					}
 				)
 				j += 1
-			k = 0
-			while k < self.tot:
-				if self.predict_node[j]["node"][k] == self.job_list[i]["job"]:
-					self.predict_node[j]["node"][k] = -1
-					self.predict_node[j]["idle"] += 1
-				k += 1
-			i += 1
+			self.predict_node[j]["idle"] += self.job_list[i]["node"]
 			self.predict_node[j]["avail"] = self.predict_node[j]["idle"]
+			i += 1
 		return 1
 
 	def find_res_place(self, proc_num, index, time):
@@ -337,3 +277,9 @@ class Node_struc:
 					return i
 			i += 1
 		return -1
+	
+	def read_config(file_path):
+		# TODO: Replace the calls to the following functions
+		# import_node_file(save_name_n)
+		# import_node_config(config_name_n)
+		pass

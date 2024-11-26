@@ -2,7 +2,7 @@ import os
 import IOModule.Debug_log as Class_Debug_log
 import IOModule.Output_log as Class_Output_log
 
-# import CqSim.Node_struc as Class_Node_struc
+import CqSim.Node_struc as Class_Node_struc
 import CqSim.Backfill as Class_Backfill
 import CqSim.Start_window as Class_Start_window
 import CqSim.Basic_algorithm as Class_Basic_algorithm
@@ -60,26 +60,26 @@ def cqsim_main(para_list):
 	# module_debug.start_debug()
 
 	# Job Filter
-	print(".................... Job Filter")
-	module_filter_job = filter_job_ext.Filter_job_SWF(
-		trace=trace_name, save=save_name_j, config=config_name_j, debug=module_debug
-	)
-	module_filter_job.feed_job_trace()
+	# print(".................... Job Filter")
+	# module_filter_job = filter_job_ext.Filter_job_SWF(
+	# 	trace=trace_name, save=save_name_j, config=config_name_j, debug=module_debug
+	# )
+	# module_filter_job.feed_job_trace()
 	# module_filter_job.read_job_trace()
 	# module_filter_job.output_job_data()
-	module_filter_job.output_job_config()
+	# module_filter_job.output_job_config()
 
 	# Node Filter
-	print(".................... Node Filter")
-	module_filter_node = filter_node_ext.Filter_node_SWF(
-		struc=struc_name, save=save_name_n, config=config_name_n, debug=module_debug
-	)
-	module_filter_node.read_node_struc()
-	module_filter_node.output_node_data()
-	module_filter_node.output_node_config()
+	# print(".................... Node Filter")
+	# module_filter_node = filter_node_ext.Filter_node_SWF(
+	# 	struc=struc_name, save=save_name_n, config=config_name_n, debug=module_debug
+	# )
+	# module_filter_node.read_node_struc()
+	# module_filter_node.output_node_data()
+	# module_filter_node.output_node_config()
 
 	# Job Trace
-	print(".................... Job Trace")
+	# print(".................... Job Trace")
 	# module_job_trace = Class_Job_trace.Job_trace(
 	# start=para_list["start"],
 	# num=para_list["read_num"],
@@ -94,9 +94,12 @@ def cqsim_main(para_list):
 
 	# Node Structure
 	print(".................... Node Structure")
-	module_node_struc = node_struc_ext.Node_struc_SWF(debug=module_debug)
-	module_node_struc.import_node_file(save_name_n)
-	module_node_struc.import_node_config(config_name_n)
+	# module_node_struc = node_struc_ext.Node_struc_SWF(debug=module_debug)
+	# module_node_struc.import_node_file(save_name_n)
+	# module_node_struc.import_node_config(config_name_n)
+	module_node_struc = Class_Node_struc.Node_struc()
+	# TODO: Get the node config file from the CLI
+	module_node_struc.read_config(node_config_file)
 
 	# Backfill
 	print(".................... Backfill")
@@ -150,7 +153,9 @@ def cqsim_main(para_list):
 	}
 
 	manager = JobManager()
-	manager.initial_import_job_file(save_name_j)
+	# manager.initial_import_job_file(save_name_j)
+	# TODO: Get the job_trace_file from the CLI
+	manager.read_jobs(job_trace_file, file_type='SWF')
 
 	module_sim = Class_Cqsim_sim.Cqsim_sim(
 		module=module_list,

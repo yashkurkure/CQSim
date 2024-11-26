@@ -184,3 +184,18 @@ class JobManager:
 	def remove_job_from_dict(self, job: Job):
 		del self.job_trace[job.index]
 		self.num_delete_jobs += 1
+
+	def import_next_job():
+		# Returns -1 when no jobs left to read, else 0
+		# TODO: Implement and replace calls to dyn_import_job_file()
+		pass
+
+
+	def read_jobs(self, file_path, file_type):
+		# Populates all jobs
+		# TODO: Implement
+		if file_type == 'SWF':
+			pass
+		if file_type == 'CSV':
+			pass
+		pass
