@@ -50,6 +50,12 @@ class Backfill:
         elif (self.mode == 2):
             # Conservative backfill
             result = self.backfill_cons() 
+        elif (self.mode == 3):
+            # EASY backfill with max depth of 1
+            result = self.backfill_depth_1_EASY()
+        elif (self.mode == 4):
+            # Conservative backfill with max depth of 1
+            result = self.backfill_depth_1_EASY() 
         else:
             return None
         return result
@@ -95,3 +101,31 @@ class Backfill:
             i += 1  
         return backfill_list
     
+
+    def backfill_depth_1_EASY(self):
+        #self.debug.debug("* "+self.myInfo+" -- backfill_EASY",5)
+        backfill_list=[]
+        self.node_module.pre_reset(self.current_para['time'])
+        '''
+        self.debug.line(4,'.')
+        for job in self.wait_job:
+            self.debug.debug(job,4)
+        self.debug.line(4,'.')
+        '''
+            
+        self.node_module.reserve(self.wait_job[0]['proc'], self.wait_job[0]['index'], self.wait_job[0]['reqTime'])
+        i = 1
+        job_num = len(self.wait_job)
+        while (i < job_num):
+            backfill_test = 0
+            backfill_test = self.node_module.pre_avail(self.wait_job[i]['proc'],\
+                    self.current_para['time'], self.current_para['time']+self.wait_job[i]['reqTime'])
+            if (backfill_test == 1):
+                backfill_list.append(self.wait_job[i]['index'])
+                self.node_module.reserve(self.wait_job[i]['proc'], self.wait_job[i]['index'], self.wait_job[i]['reqTime'])
+                
+                # a max depth of 1 for backfilling
+                break
+
+            i += 1
+        return backfill_list

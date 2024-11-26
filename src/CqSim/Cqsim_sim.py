@@ -86,34 +86,6 @@ class Cqsim_sim:
         else:
             self.read_job_pointer = i
             return 0
-
-    #obsolete
-    def insert_submit_events(self):
-        # first read all jobs to job list, buffer to event_list dynamically
-        #self.debug.debug("# "+self.myInfo+" -- insert_event_job",5) 
-        if self.read_job_pointer < 0:
-            return -1
-        i = self.read_job_pointer
-        while (i < self.read_job_buf_size + self.read_job_pointer and i < self.job_num):
-            self.insert_event(1,self.module['job'].job_info(i)['submit'],2,[1,i])
-            self.previous_read_job_time = self.module['job'].job_info(i)['submit']
-            self.debug.debug("  "+"Insert job["+"2"+"] "+str(self.module['job'].job_info(i)['submit']),4)
-            i += 1
-        if i >= self.job_num:
-            self.read_job_pointer = -1
-        else:
-            self.read_job_pointer = i
-        return 0
-    
-    #obsolete
-    def insert_event_job(self):
-        #self.debug.debug("# "+self.myInfo+" -- insert_event_job",5) 
-        i = 0
-        while (i < self.job_num):
-            self.insert_event(1,self.module['job'].job_info(i)['submit'],2,[1,i])
-            self.debug.debug("  "+"Insert job["+"2"+"] "+str(self.module['job'].job_info(i)['submit']),4)
-            i += 1
-        return
     
     def insert_event_monitor(self, start, end):
         #self.debug.debug("# "+self.myInfo+" -- insert_event_monitor",5) 
@@ -346,7 +318,7 @@ class Cqsim_sim:
         while (i < max_num):
             temp_job = self.module['job'].job_info(temp_wait_A[i])
             temp_wait_info.append({"index":temp_wait_A[i],"proc":temp_job['reqProc'],\
-             "node":temp_job['reqProc'],"run":temp_job['run'],"score":temp_job['score']})
+             "node":temp_job['reqProc'],"run":temp_job['run'],"score":temp_job['score'], "reqTime": temp_job['reqTime']})
             i += 1 
             
         temp_wait_A = self.module['win'].start_window(temp_wait_info,{"time":self.currentTime})
@@ -361,7 +333,7 @@ class Cqsim_sim:
         while (i < max_num):
             temp_job = self.module['job'].job_info(temp_wait[i])
             temp_wait_info.append({"index":temp_wait[i],"proc":temp_job['reqProc'],\
-             "node":temp_job['reqProc'],"run":temp_job['run'],"score":temp_job['score']})
+             "node":temp_job['reqProc'],"run":temp_job['run'],"score":temp_job['score'], "reqTime": temp_job['reqTime']})
             i += 1
         backfill_list = self.module['backfill'].backfill(temp_wait_info, {'time':self.currentTime})
         #self.debug.debug("HHHHHHHHHHHHH "+str(backfill_list)+" -- backfill",2) 
